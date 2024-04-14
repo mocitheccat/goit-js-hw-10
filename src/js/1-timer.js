@@ -1,9 +1,14 @@
-import flatpickr from "flatpickr";
-import "flatpickr/dist/flatpickr.min.css";
+import flatpickr from 'flatpickr';
+import Toastify from 'toastify-js';
 
-const inputRef = document.querySelector("#datetime-picker");
+import 'flatpickr/dist/flatpickr.min.css';
+import 'toastify-js/src/toastify.css';
+
+const inputRef = document.querySelector('#datetime-picker');
+const btnStartRef = document.querySelector('[data-start]');
+btnStartRef.disabled = true;
+
 let userSelectedDate;
-let intervalId;
 
 const options = {
   enableTime: true,
@@ -12,38 +17,60 @@ const options = {
   minuteIncrement: 1,
   onClose(selectedDates) {
     userSelectedDate = new Date(selectedDates[0]).getTime();
+    if (userSelectedDate < Date.now()) {
+      Toastify({
+        text: 'Please choose a date in the future',
+        duration: 3000,
+        close: true,
+        style: {
+          background: 'linear-gradient(to right, #9c1a21, #fc030f)',
+        },
+      }).showToast();
+      // alert('Please choose a date in the future');
+      btnStartRef.disabled = true;
+      return;
+    } else {
+      btnStartRef.disabled = false;
+    }
   },
 };
 
 flatpickr(inputRef, options);
 
-const btnStartRef = document.querySelector("[data-start]");
-
-btnStartRef.addEventListener("click", () => {
-  if (!userSelectedDate) {
-    alert("Please select a date first.");
-    return;
-  }
-
+btnStartRef.addEventListener('click', () => {
   btnStartRef.disabled = true;
+  inputRef.disabled = true;
+  const currentTime = Date.now();
+  let timeDifference = userSelectedDate - currentTime;
 
-  intervalId = setInterval(() => {
+  const timerID = setInterval(() => {
     const currentTime = Date.now();
-    const timeDifference = userSelectedDate - currentTime;
+    timeDifference = userSelectedDate - currentTime;
 
     if (timeDifference <= 0) {
-      clearInterval(intervalId);
-      alert("Countdown finished!");
+      clearInterval(timerID);
+      Toastify({
+        text: 'Time is up',
+        duration: 3000,
+        close: true,
+        style: {
+          background: 'linear-gradient(to right, #03fc7b, #036916)',
+        },
+      }).showToast();
+      inputRef.disabled = false;
       btnStartRef.disabled = false;
+      updateTimer(0, 0, 0, 0);
     } else {
       const { days, hours, minutes, seconds } = convertMs(timeDifference);
       updateTimer(days, hours, minutes, seconds);
     }
+    // console.log(timerID);
+    // console.log(timeDifference);
   }, 1000);
 });
 
 function addLeadingZero(value) {
-  return String(value).padStart(2, "0");
+  return String(value).padStart(2, '0');
 }
 
 function convertMs(ms) {
@@ -63,6 +90,8 @@ function convertMs(ms) {
 function updateTimer(days, hours, minutes, seconds) {
   document.querySelector('[data-days]').textContent = addLeadingZero(days);
   document.querySelector('[data-hours]').textContent = addLeadingZero(hours);
-  document.querySelector('[data-minutes]').textContent = addLeadingZero(minutes);
-  document.querySelector('[data-seconds]').textContent = addLeadingZero(seconds);
+  document.querySelector('[data-minutes]').textContent =
+    addLeadingZero(minutes);
+  document.querySelector('[data-seconds]').textContent =
+    addLeadingZero(seconds);
 }
